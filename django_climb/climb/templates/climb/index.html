@@ -2,6 +2,87 @@
 {% load static %}
 
 {% block content %}
-    <h1>Welcome to the climb application</h1>
-    <p>This is the index page.</p>
+<h2>Upload da Imagem</h2>
+
+<form id="form" enctype="multipart/form-data" method="post">
+  {% csrf_token %}
+  <input type="file" name="imagem" id="imagem" accept="image/*"><br><br>
+
+  <button type="button" onclick="enviarDados()">Enviar</button>
+</form>
+
+<hr>
+
+<h3>Imagem Original</h3>
+<img id="imagemPreview" src="" alt="Imagem Original" style="max-width: 100%; cursor: crosshair;" onclick="marcarCoordenada(event)">
+
+<script>
+let coordenadas = [];
+
+// Mostra a imagem carregada no <img> para que o usuário possa clicar
+document.getElementById("imagem").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+            document.getElementById("imagemPreview").src = evt.target.result;
+            coordenadas = []; // reseta as coordenadas ao trocar imagem
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+function marcarCoordenada(event) {
+    const img = event.target;
+    const rect = img.getBoundingClientRect();
+
+    const x = Math.floor(event.clientX - rect.left);
+    const y = Math.floor(event.clientY - rect.top);
+    coordenadas.push([x, y]);
+
+    console.log("Coordenada marcada:", x, y);
+
+    // Marcação visual (opcional)
+    const marcador = document.createElement("div");
+    marcador.style.position = "absolute";
+    marcador.style.left = `${x + rect.left}px`;
+    marcador.style.top = `${y + rect.top}px`;
+    marcador.style.width = "8px";
+    marcador.style.height = "8px";
+    marcador.style.backgroundColor = "red";
+    marcador.style.borderRadius = "50%";
+    marcador.style.pointerEvents = "none";
+    marcador.style.zIndex = 1000;
+    marcador.style.transform = "translate(-50%, -50%)";
+    document.body.appendChild(marcador);
+}
+
+function enviarDados() {
+    const form = document.getElementById("form");
+    const data = new FormData(form);
+
+    // Adiciona as coordenadas clicadas
+    coordenadas.forEach(coord => data.append("coordenadas[]", coord.join(',')));
+
+    fetch("{% url 'ajustar' %}", {
+        method: "POST",
+        body: data,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'  // <- aqui
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.erro) {
+            alert("Erro: " + data.erro);
+        } else {
+            // Após o envio, redirecionar para a página de ajustes, passando o id ou algum identificador
+            // Mas se você quiser manter só via ajax, pode armazenar a imagem e atualizar a página
+            // Aqui você pode usar window.location para ir para a página de ajustes
+            window.location.href = "{% url 'ajustar' %}?img_id=" + data.img_id;
+        }
+    });
+}
+</script>
+
 {% endblock %}

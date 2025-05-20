@@ -1,0 +1,67 @@
+{% extends 'climb/base.html' %}
+{% load static %}
+
+{% block content %}
+<h2>Etapa 2: Ajuste de Tolerâncias HSV</h2>
+
+<div>
+  <p><strong>Imagem Original (para referência):</strong></p>
+  <img id="imgOriginal" src="data:image/png;base64,{{ imagem_original }}" style="max-width: 100%;">
+</div>
+
+<div style="margin-top: 20px;">
+  <p><strong>Imagem Processada:</strong></p>
+  <img id="imgResultado" src="data:image/png;base64,{{ imagem_processada }}" style="max-width: 100%;">
+</div>
+
+<div style="margin-top: 20px;">
+  <label>Tolerância H: <input type="range" id="sliderH" min="0" max="50" value="{{ tol_h }}"></label><br>
+  <label>Tolerância S: <input type="range" id="sliderS" min="0" max="100" value="{{ tol_s }}"></label><br>
+  <label>Tolerância V: <input type="range" id="sliderV" min="0" max="100" value="{{ tol_v }}"></label><br>
+</div>
+
+<script>
+const coordenadas = JSON.parse('{{ coordenadas|escapejs }}');
+const imgOriginalSrc = document.getElementById("imgOriginal").src;
+
+const sliderH = document.getElementById("sliderH");
+const sliderS = document.getElementById("sliderS");
+const sliderV = document.getElementById("sliderV");
+const imgResultado = document.getElementById("imgResultado");
+
+function atualizarImagem() {
+    console.log("imgOriginalSrc:", imgOriginalSrc);
+    console.log("coordenadas:", coordenadas);
+
+    const data = new FormData();
+    data.append("imagem", imgOriginalSrc);  // string base64
+    data.append("coordenadas", JSON.stringify(coordenadas));
+    data.append("tol_h", sliderH.value);
+    data.append("tol_s", sliderS.value);
+    data.append("tol_v", sliderV.value);
+
+    fetch("{% url 'ajustar' %}", {
+        method: "POST",
+        body: data,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": "{{ csrf_token }}"
+        }
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.erro) {
+            alert("Erro: " + json.erro);
+        } else {
+            imgResultado.src = "data:image/png;base64," + json.imagem;
+        }
+    })
+    .catch(err => alert("Erro na requisição: " + err));
+}
+
+sliderH.addEventListener("input", atualizarImagem);
+sliderS.addEventListener("input", atualizarImagem);
+sliderV.addEventListener("input", atualizarImagem);
+</script>
+
+{% endblock %}
