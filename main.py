@@ -51,6 +51,15 @@ def on_click(event):
         print(f"Coordenada registrada: ({x}, {y})")
         plt.close()  # fecha a janela após um clique
 
+def on_click_regiao(event):
+    if event.xdata is not None and event.ydata is not None:
+        x = int(event.xdata)
+        y = int(event.ydata)
+        coordenadas_regiao.append((x, y))
+        print(f"Coordenada registrada: ({x}, {y})")
+        if len(coordenadas_regiao) == 2:
+            plt.close()
+
 def atualizar(val):
     tol_h = int(slider_h.val)
     tol_s = int(slider_s.val)
@@ -163,6 +172,7 @@ def visualizar_componentes(binary_image, components):
 matplotlib.use('TkAgg')
 
 coordenadas = []
+coordenadas_regiao = []
 caminho_imagem = 'img/parede30.png'
 imagem_bgr = cv2.imread(caminho_imagem)
 
@@ -171,6 +181,30 @@ if imagem_bgr is None:
 else:
     imagem_rgb = cv2.cvtColor(imagem_bgr, cv2.COLOR_BGR2RGB)
     imagem_hsv = cv2.cvtColor(imagem_bgr, cv2.COLOR_BGR2HSV)
+
+    
+    fig, ax = plt.subplots()
+    ax.imshow(imagem_rgb)
+    ax.set_title('Clique nos dois pontos da imagem para limitar a região da rota')
+    cid = fig.canvas.mpl_connect('button_press_event', on_click_regiao)
+    plt.show()
+
+    print("\nRegiao selecionada:")
+    for (x, y) in coordenadas_regiao:
+        print(f"Canto superior esquerdo: ({coordenadas_regiao[0][0]}, {coordenadas_regiao[0][1]})")
+        print(f"Canto inferior direito: ({coordenadas_regiao[1][0]}, {coordenadas_regiao[1][1]})")
+
+    # Limitar a região da imagem
+    x1, y1 = coordenadas_regiao[0]
+    x2, y2 = coordenadas_regiao[1]
+
+    if x1 > x2:
+        x1, x2 = x2, x1
+    if y1 > y2:
+        y1, y2 = y2, y1
+
+    imagem_rgb = imagem_rgb[y1:y2, x1:x2]
+    imagem_hsv = imagem_hsv[y1:y2, x1:x2]
 
     fig, ax = plt.subplots()
     ax.imshow(imagem_rgb)
@@ -183,7 +217,6 @@ else:
         cor_hsv = imagem_hsv[y, x]
         print(f"Coordenada ({x}, {y}): Cor HSV: {cor_hsv}")
 
-    
     fig, ax = plt.subplots()
     plt.subplots_adjust(left=0.25, bottom=0.35)
     img_plot = ax.imshow(imagem_rgb)
